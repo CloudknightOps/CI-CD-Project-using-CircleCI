@@ -68,12 +68,12 @@ jobs:
       - restore_cache: 
           keys: [front-scan]
       - run:
-          name : front-end scan
+          name: front-end scan
           command: |
              cd frontend 
              npm install 
-            #  npm audit fix --audit-level=citical --force 
              npm audit --audit-level=critical  
+            #  npm audit fix --audit-level=citical --force 
 
   scan-backend:
     docker:
@@ -87,8 +87,8 @@ jobs:
           command: |
              cd backend 
              npm install 
-            #  npm audit fix --force 
              npm audit --audit-level=critical 
+            #  npm audit fix --force 
       
 
 

@@ -68,5 +68,5 @@ workflows:
       - build-backend
       - test-frontend:
           requires: [build-frontend]
-      - test backend:
+      - test-backend:
           requires: [build-backend]

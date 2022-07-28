@@ -1,22 +1,18 @@
 version: 2.1
 
 commands:
-  destroy_environment:
-    description: Destroy cloud Formation stacks and Infrastructure when fail.
-    parameters:
-      id:
-        type: string
+  destroy_environment: 
     steps:
       - run:
           name: Destroy udapeople backend cfn stack 
           when: on_fail
           command: |
-            aws cloudformation delete-stack  --stack-name  udapeople-backend-<< parameters.id >>
+            aws cloudformation delete-stack  --stack-name  "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
-          name: Destroy udapeople frrontend cfn stack 
+          name: Destroy udapeople frontend cfn stack 
           when: on_fail
           command:
-            aws cloudformation delete-stack  --stack-name udapeople-frontend-<<parameters.id >>
+            aws cloudformation delete-stack  --stack-name  "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
             
             
 
@@ -151,8 +147,7 @@ jobs:
           root: .
           paths:
             - ./.circleci/ansible/inventory.txt 
-      - destroy_enviroment:
-          id: ${CIRCLE_WORKFLOW_ID:0:7}
+
   configure-infrastructure:
     docker:
       - image: python:3.7-alpine3.11
@@ -171,7 +166,7 @@ jobs:
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
             exit 1
-      - destroy_enviroment:
+      - destroy-enviroment:
           id: ${CIRCLE_WORKFLOW_ID:0:7}
           
       

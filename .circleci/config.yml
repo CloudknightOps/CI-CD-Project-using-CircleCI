@@ -161,6 +161,10 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update ansible  
+       - run:
+          name: Install ssh
+          command: |
+              apk add --update openssh
       - run:
           name: Configure server
           command: |

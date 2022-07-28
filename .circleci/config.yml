@@ -1,7 +1,7 @@
 version: 2.1
 
 commands:
-  destroy-environment:
+  destroy_environment:
     description: Destroy cloud Formation stacks and Infrastructure when fail.
     parameters:
       id:

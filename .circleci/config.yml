@@ -167,6 +167,7 @@ jobs:
               apk add --update openssh
       - run:
           name: Configure server
+           export ANSIBLE_HOST_KEY_CHECKING=false
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
           return: 1

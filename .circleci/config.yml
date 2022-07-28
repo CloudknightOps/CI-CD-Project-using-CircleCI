@@ -166,7 +166,8 @@ jobs:
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
           return: 1
-      - destroy_enviroment:
+      - destroy_enviroment
+        
           
           
       

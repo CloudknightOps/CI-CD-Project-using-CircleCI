@@ -156,7 +156,7 @@ jobs:
       - add_ssh_keys:
           fingerprints: [15:70:09:55:91:96:ae:52:1b:55:c0:9f:48:9d:26:2a]
       - attach_workspace:
-           at:
+           at: .
       - run:
           name: Install dependencies
           command: |
@@ -166,7 +166,7 @@ jobs:
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
           return: 1
-      - destroy_enviroment
+          destroy_enviroment:
         
           
           

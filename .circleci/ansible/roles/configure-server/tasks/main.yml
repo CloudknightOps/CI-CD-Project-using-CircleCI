@@ -10,7 +10,7 @@
       autoremove: yes 
 
   - name: "install nodejs and npm"
-  - become: yes 
+    become: yes 
     apt: 
       name: ["nodejs", "npm"]
       state: latest

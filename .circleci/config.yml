@@ -167,7 +167,7 @@ jobs:
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
             exit 1
       - destroy-enviroment:
-          id: ${CIRCLE_WORKFLOW_ID:0:7}
+          
           
       
 

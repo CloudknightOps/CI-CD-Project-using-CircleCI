@@ -149,6 +149,8 @@ jobs:
             - ./.circleci/ansible/inventory.txt 
 
   configure-infrastructure:
+    environment:
+      - ANSIBLE_HOST_KEY_CHECKING: False
     docker:
       - image: python:3.7-alpine3.11
     steps:
@@ -167,8 +169,6 @@ jobs:
               apk add --update openssh
       - run:
           name: Configure server
-          environment:
-            - ANSIBLE_HOST_KEY_CHECKING: False
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
           return: 1

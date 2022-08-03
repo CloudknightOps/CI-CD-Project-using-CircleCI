@@ -2,6 +2,10 @@ version: 2.1
 
 commands:
   destroy_environment: 
+    description: Destroy Cloudformation stack and Infrastructure 
+    parameters:
+      id:
+        type: string
     steps:
       - run:
           name: Destroy udapeople backend cfn stack 
@@ -13,6 +17,25 @@ commands:
           when: on_fail
           command:
             aws cloudformation delete-stack  --stack-name  "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
+  
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+    parameters:
+      workflow_id:
+        type: string
+      id:
+    steps:
+      - run:
+          name: Revert migrations
+          working_directory: ./backend
+          command: |
+            SUCCESS=$(curl https://keyvalue.immanuel.co/api/keyValue/GetValue/n2dtyfw3/DB_MIGRATION_<< parameter.workflow_id >>)
+
+            if [["$SUCCESS" == 1]]
+            then
+               npm run migrations:revert
+            fi
+          when: on_fail
             
             
 
@@ -171,8 +194,145 @@ jobs:
           name: Configure server
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
-          return: 1
-          destroy_enviroment:
+          
+
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - run:
+          name: Run migrations
+          command: |
+            cd backend 
+            npm install 
+            npm run migrations > migrations_dump.txt
+      - run:
+          name: Send migration results to memstash
+          command: |
+            if grep -q "has been executed successfully"  ~/project/backendend/migrations_dump.txt
+            then 
+                curl --header "content-lenght:0" -x POST https://keyvalue.immanuel.co/api/KeyVal/updateValue/n2dtyfw3/name/Oghenegare
+            else
+                curl --header "content-length:0" -x POST https://keyvalue.immanuel.co/api/KeyVal/updateValue/n2dtyfw3/name/Oghenegare 
+            fi
+      
+        
+
+  deploy-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout 
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Install dependencies
+          working_directory: /tmp
+          command: |
+            sudo apt-get update && sudo apt-get install -yy less 
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"  -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+      - run:
+          name: Get backend url
+          working_directory: ./frontend
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> .env
+            cat .env
+      - run:
+          name: Deploy frontend objects
+          working_directory: ./frontend
+          command: |
+            npm install 
+            npm run build 
+            aws s3 cp ./dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --recursive
+      - persist_to_workspace:
+          root: .
+          paths:
+            - frontend/dist
+
+
+  deploy-backend:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:  [15:70:09:55:91:96:ae:52:1b:55:c0:9f:48:9d:26:2a]
+      - run:
+          name: Install dependencies and deploy backend
+          no_output_timeout: 20m
+          command: |
+            apk add --update ansible curl rsync openssh nodejs npm git
+            ansible --version 
+            git  --version 
+            pip install awscli 
+            aws --version 
+            echo "list all files and dir"
+            cd backend
+            npm install 
+            npm run build
+            cd -
+            # Zip the directory 
+            tar -C backend -czvf artifact.tar.gz 
+            ls
+            pwd
+            cd /root/project/circle.ci/ansible
+            aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --output text >> inventory.txt 
+            cat inventory.txt 
+            ansible-playbook -i inventory.txt deploy-backend.yml -vvv
+      
+  smoke-test:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          working_directory: /tmp
+          command: |
+            apk add --update  curl nodejs npm
+            pip install awscli
+      - run:
+          name: Backend smoke test.
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            if curl "${API_URL}/api/status"  | grep "ok"
+            then 
+                return 0
+            else
+                return 1
+            fi 
+      - run:
+          name: Frontend smoke test.
+          command: |
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/#/employees"
+            echo ${URL}
+            if curl -s ${URL} | grep "welcome"
+            then 
+                return 1
+            else 
+                return 1
+            fi 
+            destroy_enviroment:
+      
+
+  
         
           
           
@@ -200,5 +360,18 @@ workflows:
                 - master
       - configure-infrastructure:
           requires: [deploy-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
+          filters:
+             branches:
+               only: 
+                 - master
+      - deploy-frontend:
+          requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
+      - smoke-test:
+          requires: [deploy-backend, deploy-frontend]
+  
                 
                 

@@ -212,7 +212,7 @@ jobs:
       - run:
           name: Send migration results to memstash
           command: |
-            if grep -q "has been executed successfully"  ~/project/backendend/migrations_dump.txt
+            if grep -q "has been executed successfully"  ~/project/backend/migrations_dump.txt
             then 
                 curl --header "content-lenght:0" -x POST https://keyvalue.immanuel.co/api/KeyVal/updateValue/n2dtyfw3/name/Oghenegare
             else

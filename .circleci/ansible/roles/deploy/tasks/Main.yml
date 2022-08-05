@@ -1,6 +1,44 @@
 ---
-  - name: "update apt packages. "
-    become: yes 
-    apt:
-      update_cache: yes 
+  - name: Extract artifact 
+    unarchive:
+      src: /root/project/artifact.tar.gz
+      dest: /home/ununtu/app
     
+  - name: "copy bakend build folder to EC2"
+    become: yes 
+    unarchive: 
+      src: /root/project/artifact.tar.gz
+      dest: /home/ubuntu/app
+
+
+  - name: "list dirs"
+    become: yes 
+    command: "ls /home/ubuntu/app/"
+
+  - name: "delete anything that might already be running"
+    become: true 
+    command: pm2 delete all 
+    ignore_errors: true 
+
+  - name: "print env"
+    shell: |
+      env
+
+  - name: "start backend with pm2"
+    become: yes
+    shell: |
+      pm2 start ./main.js
+    args:
+        chdir: /home/ubuntu/app/dist
+    enviroment: 
+      ENVIROMENT: production   
+      TYPEORM_CONNECTION: postgres 
+      TYPEORM_ENTITIES: /home/ubuntu/app/dist/modules/domain/**/*.entity{.ts,.js}
+      TYPEORM_MIGRATIONS_DIR: /home/ubuntu/app/dist/migrations
+      TYPEORM_MIGRATIONS: /home/ubuntu/app/dist/migrations/*.js
+      TYPEORM_HOST: "{{ lookup('env', 'TYPEORM_HOST')}}"
+      TYPEORM_PORT: "{{ lookup('env', 'TYPEORM_PORT')}}"
+      TYPEORM_USERNAME:  "{{ lookup('env', 'TYPEORM_USERNAME')}}"
+      TYPEORM_PASSWORD:  "{{ lookup('env', 'TYPEORM_PASSWORD')}}"
+      TYPEORM_DATABASE:  "{{ lookup('env', 'TYPEORM_DATABASE')}}"
+  

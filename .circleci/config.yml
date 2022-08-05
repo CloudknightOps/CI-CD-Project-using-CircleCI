@@ -269,7 +269,7 @@ jobs:
           fingerprints:  [15:70:09:55:91:96:ae:52:1b:55:c0:9f:48:9d:26:2a]
       - persist_to_workspace:
           root: .
-          path: 
+          paths: 
             - root/project/.circleci/ansible/inventory.txt
       - attach_workspace:
           at: .

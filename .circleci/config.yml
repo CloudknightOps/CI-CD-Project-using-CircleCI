@@ -224,8 +224,8 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout 
-      - attach_workspace:
-          at: .
+      - restore_cache:
+          keys: [backend-deps]
 
       - run:
           name: Install dependencies
@@ -245,8 +245,8 @@ jobs:
             --output text)
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
-            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
-            cat frontend/.env
+            echo API_URL="http://${BACKEND_IP}:3030" >> .env
+            cat .env
       - run:
           name: Deploy frontend objects
           working_directory: ./frontend
@@ -258,6 +258,8 @@ jobs:
           root: .
           paths:
             - frontend/dist
+      - attach_workspace:
+          at: .
 
 
   deploy-backend:

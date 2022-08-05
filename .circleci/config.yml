@@ -245,15 +245,15 @@ jobs:
             --output text)
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
-            echo API_URL="http://${BACKEND_IP}:3030" >> .env
-            cat .env
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
       - run:
           name: Deploy frontend objects
           working_directory: ./frontend
           command: |
             npm install 
             npm run build 
-            aws s3 cp ./dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --recursive
+            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - persist_to_workspace:
           root: .
           paths:
@@ -270,7 +270,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths: 
-            -   .circleci/ansible/inventory.txt
+            - .circleci/ansible/inventory.txt
       - attach_workspace:
           at: .
 
@@ -292,7 +292,7 @@ jobs:
             tar -C backend -czvf artifact.tar.gz 
             ls
             pwd
-            cd /root/project/circle.ci/ansible
+            cd  circle.ci/ansible
             aws ec2 describe-instances \
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \

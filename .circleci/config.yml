@@ -198,7 +198,6 @@ jobs:
           name: Configure server
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
-      - destroy-enviroment
           
 
   run-migrations:
@@ -265,7 +264,6 @@ jobs:
             - frontend/dist
       - attach_workspace:
           at: .
-      - destroy-enviroment
       - revert-migrations 
       
 
@@ -323,7 +321,6 @@ jobs:
             --output text >> inventory.txt 
             cat inventory.txt 
             ansible-playbook -i inventory.txt deploy-backend.yml -vvv
-      - destroy-enviroment
       - revert-migrations 
       
 
@@ -364,8 +361,7 @@ jobs:
                 return 1
             else 
                 return 1
-            fi 
-      - destroy-enviroment
+            fi    
       - revert-migrations 
       
 

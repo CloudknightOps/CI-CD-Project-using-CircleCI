@@ -1,42 +1,46 @@
 version: 2.1
 
 commands:
-  destroy_environment: 
-    description: Destroy Cloudformation stack and Infrastructure 
+
+
+
+  destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
-      id:
+      Workflow_ID:
         type: string
+        default: ${CIRCLE_WORKFLOW_ID:0:7}
     steps:
       - run:
-          name: Destroy udapeople backend cfn stack 
+          name: Destroy environments
           when: on_fail
           command: |
-            aws cloudformation delete-stack  --stack-name  "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}"
-      - run:
-          name: Destroy udapeople frontend cfn stack 
-          when: on_fail
-          command:
-            aws cloudformation delete-stack  --stack-name  "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.Workflow_ID >>
+            aws s3 rm s3://udapeople-<<parameters.Workflow_ID>> --recursive
+            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >>
+
+           
   
   revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.
+    description: Revert the last migration, if any were executed during the current workflow
     parameters:
-      workflow_id:
+      Workflow_ID:
         type: string
-      id:
+        default: ${CIRCLE_WORKFLOW_ID:0:7}
     steps:
       - run:
           name: Revert migrations
-          working_directory: ./backend
-          command: |
-            SUCCESS=$(curl https://keyvalue.immanuel.co/api/keyValue/GetValue/n2dtyfw3/DB_MIGRATION_<< parameter.workflow_id >>)
-
-            if [["$SUCCESS" == 1]]
-            then
-               npm run migrations:revert
-            fi
           when: on_fail
-            
+          command: |
+            SUCCESS=$(curl --insecure  https://kvdb.io/KhpJZih3df54kYYPzuGY97/migration_<< parameters.Workflow_ID >>)
+
+            # Logic for reverting the database state
+            if (( $SUCCESS == 1 ));
+            then
+              cd ~/project/backend
+              npm install
+              npm run migration:revert
+            fi
             
 
 
@@ -173,7 +177,7 @@ jobs:
 
   configure-infrastructure:
     environment:
-      - ANSIBLE_HOST_KEY_CHECKING: False
+      - ANSIBLE_HOST_KEY_CHECKING: false
     docker:
       - image: python:3.7-alpine3.11
     steps:
@@ -194,6 +198,7 @@ jobs:
           name: Configure server
           command: |
             ansible-playbook -i ./.circleci/ansible/inventory.txt  ./.circleci/ansible/configure-server.yml
+      - destroy-enviroment
           
 
   run-migrations:
@@ -225,7 +230,7 @@ jobs:
     steps:
       - checkout 
       - restore_cache:
-          keys: [backend-deps]
+          keys: [frontend-deps]
 
       - run:
           name: Install dependencies
@@ -260,6 +265,10 @@ jobs:
             - frontend/dist
       - attach_workspace:
           at: .
+      - destroy-enviroment
+      - revert-migrations 
+      
+
 
 
   deploy-backend:
@@ -275,9 +284,10 @@ jobs:
             - .circleci/ansible/inventory.txt
       - attach_workspace:
           at: .
-
+      - restore_cache:
+          keys: [backend-deps]
       - run:
-          name: Install dependencies and deploy backend
+          name: Install dependencies
           no_output_timeout: 20m
           command: |
             apk add --update ansible curl rsync openssh nodejs npm git
@@ -288,12 +298,24 @@ jobs:
             echo "list all files and dir"
             cd backend
             npm install 
-            npm run build
-            cd -
-            # Zip the directory 
-            tar -C backend -czvf artifact.tar.gz 
-            ls
-            pwd
+            
+      - run:
+          name: package Backend
+          command:
+            cd backend 
+            npm run build  
+            tar -czf artifact.tar.gz dist/* package*
+            
+
+            cd ..
+            cp backend/artifact.tar.gz .circleci/ansible/role/deploy/files
+      - run: 
+          name: Deploy Backend 
+          command: |
+            export TYPEORM_ENTITIES: /home/ubuntu/Backend-app/dist/modules/domain/**/*.entity{.ts,.js}
+            export TYPEORM_MIGRATIONS_DIR: /home/ubuntu/app/dist/migrations
+            export TYPEORM_MIGRATIONS: /home/ubuntu/app/dist/migrations/*.js
+
             cd  circle.ci/ansible
             aws ec2 describe-instances \
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
@@ -301,6 +323,10 @@ jobs:
             --output text >> inventory.txt 
             cat inventory.txt 
             ansible-playbook -i inventory.txt deploy-backend.yml -vvv
+      - destroy-enviroment
+      - revert-migrations 
+      
+
       
   smoke-test:
     docker:
@@ -320,6 +346,7 @@ jobs:
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --output text)
+
             export API_URL="http://${BACKEND_IP}:3030"
             if curl "${API_URL}/api/status"  | grep "ok"
             then 
@@ -338,7 +365,8 @@ jobs:
             else 
                 return 1
             fi 
-            destroy_enviroment:
+      - destroy-enviroment
+      - revert-migrations 
       
 
   

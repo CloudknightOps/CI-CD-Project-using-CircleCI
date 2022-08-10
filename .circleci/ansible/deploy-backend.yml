@@ -14,9 +14,9 @@
   environment:
     ENVIROMENT: production   
     TYPEORM_CONNECTION: postgres 
-    TYPEORM_ENTITIES: /home/ubuntu/app/dist/modules/domain/**/*.entity{.ts,.js}
-    TYPEORM_MIGRATIONS_DIR: /home/ubuntu/app/dist/migrations
-    TYPEORM_MIGRATIONS: /home/ubuntu/app/dist/migrations/*.js
+    TYPEORM_ENTITIES: ./src/modules/domain/**/*.entity.ts
+    TYPEORM_MIGRATIONS_DIR: ./src/migrations
+    TYPEORM_MIGRATIONS: ./src/migrations/*.ts
     TYPEORM_HOST: "{{ lookup('env', 'TYPEORM_HOST')}}"
     TYPEORM_PORT: "{{ lookup('env', 'TYPEORM_PORT')}}"
     TYPEORM_USERNAME:  "{{ lookup('env', 'TYPEORM_USERNAME')}}"

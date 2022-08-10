@@ -310,9 +310,9 @@ jobs:
       - run: 
           name: Deploy Backend 
           command: |
-            export TYPEORM_ENTITIES: /home/ubuntu/Backend-app/dist/modules/domain/**/*.entity{.ts,.js}
-            export TYPEORM_MIGRATIONS_DIR: /home/ubuntu/app/dist/migrations
-            export TYPEORM_MIGRATIONS: /home/ubuntu/app/dist/migrations/*.js
+            export TYPEORM_ENTITIES: ./src/modules/domain/**/*.entity.ts
+            export TYPEORM_MIGRATIONS_DIR: ./src/migrations
+            export TYPEORM_MIGRATIONS: ./src/migrations/*.ts
 
             cd  circle.ci/ansible
             aws ec2 describe-instances \

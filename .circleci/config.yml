@@ -219,7 +219,7 @@ jobs:
               echo "No migrations happened"
             fi
       - destroy-environment
-      - rollback_migration
+      - revert_migration
 
   deploy-frontend:
     docker:
@@ -258,7 +258,7 @@ jobs:
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       - destroy-environment
-      - rollback_migration
+      - revert_migration
 
   deploy-backend:
     docker:
@@ -295,7 +295,7 @@ jobs:
             cat inventory.txt
             ansible-playbook -i inventory.txt deploy-backend.yml
       - destroy-environment
-      - rollback_migration
+      - revert_migration
 
   smoke-test:
     docker:
@@ -335,7 +335,7 @@ jobs:
               return 1
             fi
       - destroy-environment
-      - rollback_migration
+      - revert_migration
 
   cloudfront-update:
     docker:
@@ -363,7 +363,7 @@ jobs:
       - attach_workspace:
           at: ~/
       - destroy-environment
-      - rollback_migration
+      - revert_migration
 
   cleanup:
     docker:

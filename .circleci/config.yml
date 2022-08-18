@@ -319,7 +319,7 @@ jobs:
             sleep 3m
             if curl "${API_URL}/api/status" | grep "ok"
             then
-              return 1
+              return 0
             else
               return 1
             fi

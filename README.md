@@ -1,6 +1,5 @@
 
 # Continous integration and continous Delivery of a Docker packaged Nodejs Web application 
-## Give your Application Auto-Deploy Superpower
 
 ### Built With
 
